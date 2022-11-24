@@ -1,0 +1,33 @@
+FROM intersystems/iris:2022.1.0.209.0
+LABEL maintainer="Ariel Arias <ariel.arias@intersystems.com>"
+
+USER root
+
+RUN apt-get -y update
+
+# Install some aditional software may be needed later
+RUN apt-get install -y vim nano net-tools unzip wget sudo iputils-ping links
+
+RUN echo "FROM IRISDPFILE"
+
+USER irisowner
+
+COPY ./Licencias/iris4h2023.key /usr/irissys/mgr/iris.key
+
+COPY ./enableirisuser.script /tmp/enableirisuser.script
+
+RUN iris start IRIS \
+    && iris session IRIS < /tmp/enableirisuser.script \
+    && iris stop IRIS quietly
+
+USER irisowner
+
+# add default health check
+HEALTHCHECK --interval=1m --timeout=10s --start-period=1m --retries=3 \
+  CMD /irisHealth.sh || exit 1
+
+USER irisowner
+
+EXPOSE 1972
+EXPOSE 52773
+EXPOSE 53773
